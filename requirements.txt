@@ -1,0 +1,8 @@
+numpy
+nltk
+pyyaml
+scikit-learn
+sentence-transformers
+openai
+tqdm
+huggingface_hub

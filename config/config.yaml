@@ -1,0 +1,38 @@
+# config/config.yaml
+
+project:
+  name: "Algorithmic Summarization Engine"
+  version: "2.0"
+
+io:
+  input_dir: "data/raw"
+  output_dir: "data/outputs"
+  default_input_file: "input.txt"
+
+preprocessing:
+  min_sentence_length: 10  # Filter out very short sentences (e.g., titles)
+
+textrank:
+  # Similarity threshold to create an edge in the graph (Phase 1, Pg 7)
+  similarity_threshold: 0.1
+  # PageRank damping factor (d)
+  damping_factor: 0.85
+  # Convergence criteria for PageRank
+  convergence_threshold: 0.0001
+  max_iterations: 50
+
+# ... سایر تنظیمات دست نخورده ...
+
+llm:
+  mode: "api" 
+  model_name: "facebook/bart-large-cnn"
+  api_key_env_var: "HF_TOKEN"
+  prompt_template: "N/A"
+
+# ... سایر تنظیمات دست نخورده ...
+
+hybrid:
+  # The core weights for the merge algorithm (Phase 1, Pg 8)
+  alpha: 0.6  # Weight for Statistical Score (TextRank)
+  beta: 0.4   # Weight for Semantic Similarity (LLM)
+  final_summary_count: 3 # Number of sentences in the final output
