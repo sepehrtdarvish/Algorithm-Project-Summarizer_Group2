@@ -25,9 +25,8 @@ textrank:
 
 llm:
   mode: "api" 
-  model_name: "facebook/bart-large-cnn"
-  api_key_env_var: "HF_TOKEN"
-  prompt_template: "N/A"
+  model_name: "gemini-2.0-flash"
+  api_key_env_var: "METIS_API_KEY"
 
 # ... سایر تنظیمات دست نخورده ...
 

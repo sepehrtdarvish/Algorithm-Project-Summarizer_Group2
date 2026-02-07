@@ -6,3 +6,4 @@ sentence-transformers
 openai
 tqdm
 huggingface_hub
+google-generativeai

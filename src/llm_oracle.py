@@ -2,53 +2,59 @@ import os
 from typing import Optional
 
 try:
-    from huggingface_hub import InferenceClient
+    import google.generativeai as genai
+    from google.api_core.client_options import ClientOptions
 except ImportError:
-    InferenceClient = None
+    genai = None
 
 class LLMOracle:
     def __init__(self, config: dict):
         self.mode = config.get('mode', 'mock')
-        self.model = config.get('model_name', 'facebook/bart-large-cnn')
-        
-        env_var_name = config.get('api_key_env_var', 'HF_TOKEN')
-        self.api_key = os.getenv(env_var_name)
-        
-        self.client = None
-        
-        if self.mode != 'mock':
-            if not self.api_key:
-                print(f">> [Warning] {env_var_name} not found. LLM Oracle might fail.")
-            else:
-                self.client = InferenceClient(
-                    provider="hf-inference",
-                    api_key=self.api_key,
-                )
+        self.model = None
+
+        raw_name = config.get('model_name', 'gemini-2.0-flash')
+        self.model_name = f"models/{raw_name.removeprefix('models/')}"
+
+        if self.mode == 'mock':
+            return
+
+        # ۳. بررسی پیش‌نیازها
+        if genai is None:
+            raise ImportError("Please install `google-generativeai` package.")
+
+        api_key = os.getenv(config.get('api_key_env_var', 'METIS_API_KEY'))
+        if not api_key:
+            print(">> [Warning] API Key not found. LLM Oracle might fail.")
+            return
+
+
+        # ۴. کانفیگ و ساخت مدل
+        genai.configure(
+            api_key=api_key,
+            transport='rest',
+            client_options=ClientOptions(api_endpoint="https://api.metisai.ir")
+        )
+        self.model = genai.GenerativeModel(self.model_name)
 
     def get_abstractive_summary(self, full_text: str) -> str:
         """
-        Generates a summary using Hugging Face Inference API.
-        Uses the 'summarization' task specific method.
+        Generates a summary using Metis AI (Native Google SDK).
         """
-        print(self.api_key)
         if self.mode == 'mock':
             print(">> [LLM Oracle] Running in MOCK mode (no API call).")
             return full_text[:500] + "..."
         
-        # ۲. بررسی وجود کلاینت
-        if self.client is None:
-            raise ValueError("Hugging Face Client is not initialized. Check your HF_TOKEN.")
+        if self.model is None:
+            raise ValueError("Gemini Model is not initialized. Check your API Key.")
 
         try:
-            truncated_text = full_text[:3500] 
-
-            result = self.client.summarization(
-                truncated_text,
-                model=self.model
-            )
+            # ارسال پرامپت برای خلاصه سازی
+            prompt = f"Please provide a concise abstractive summary of the following text:\n\n{full_text}"
             
-            return result.summary_text
+            response = self.model.generate_content(prompt)
+            
+            return response.text
 
         except Exception as e:
-            print(f"Error calling Hugging Face API: {e}")
+            print(f"Error calling Metis API: {e}")
             return ""
