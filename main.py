@@ -1,6 +1,7 @@
-# main.py
 import sys
 import time
+import os
+import numpy as np  # اضافه شد برای اطمینان
 from src.utils import load_config, setup_logger, read_text_file, save_summary
 from src.preprocessing import split_into_sentences, filter_sentences
 from src.vectorization import ManualTFIDF
@@ -8,7 +9,6 @@ from src.graph_utils import calculate_cosine_similarity_matrix, build_graph
 from src.textrank import run_pagerank
 from src.llm_oracle import LLMOracle
 from src.hybrid_merge import HybridMerger
-import os
 
 def main():
     # 1. Setup
@@ -55,6 +55,24 @@ def main():
     
     logger.info(f"TextRank completed in {time.time() - start_time:.4f}s")
 
+    # --- [NEW] Generate Classic Summary (TextRank Only) ---
+    logger.info("Generating Classical TextRank Summary...")
+    top_n = config['hybrid']['final_summary_count']
+    
+    # FIX: استفاده مستقیم از ایندکس برای NumPy Array
+    # جملات را بر اساس امتیاز مرتب می‌کنیم و N تای اول را برمی‌داریم
+    ranked_indices = sorted(
+        range(len(sentences)), 
+        key=lambda i: tr_scores[i],  # این خط برای هم لیست و هم آرایه نامپای کار می‌کند
+        reverse=True
+    )[:top_n]
+    
+    # جملات انتخاب شده را دوباره بر اساس ترتیب متن اصلی مرتب می‌کنیم
+    ranked_indices.sort()
+    
+    classic_summary = " ".join([sentences[i] for i in ranked_indices])
+    # ------------------------------------------------------
+
     # 5. Phase 2: LLM Oracle (Semantic)
     logger.info("Querying LLM Oracle...")
     oracle = LLMOracle(config['llm'])
@@ -68,18 +86,35 @@ def main():
     )
     
     results = merger.merge_scores(sentences, tr_scores, llm_summary)
-    final_summary = merger.get_top_n(results, n=config['hybrid']['final_summary_count'])
+    final_hybrid_summary = merger.get_top_n(results, n=config['hybrid']['final_summary_count'])
 
-    # 7. Output
-    logger.info("Final Summary Generated.")
-    print("\n--- FINAL SUMMARY ---\n")
-    print(final_summary)
-    print("\n---------------------\n")
+    # 7. Output (Updated to show all 3)
+    logger.info("Summaries Generated.")
     
-    output_filename = "summary_output.txt"
-    save_summary(config['io']['output_dir'], output_filename, final_summary)
-    logger.info(f"Summary saved to {config['io']['output_dir']}/{output_filename}")
+    print("\n" + "="*40)
+    print(" 1. CLASSICAL SUMMARY (TextRank)")
+    print("="*40)
+    print(classic_summary)
+    
+    print("\n" + "="*40)
+    print(" 2. SEMANTIC SUMMARY (LLM Oracle)")
+    print("="*40)
+    print(llm_summary)
+    
+    print("\n" + "="*40)
+    print(" 3. HYBRID SUMMARY (Merged)")
+    print("="*40)
+    print(final_hybrid_summary)
+    print("\n" + "="*40 + "\n")
+    
+    # Save to separate files
+    output_dir = config['io']['output_dir']
+    
+    save_summary(output_dir, "summary_classic.txt", classic_summary)
+    save_summary(output_dir, "summary_llm.txt", llm_summary)
+    save_summary(output_dir, "summary_hybrid.txt", final_hybrid_summary)
+    
+    logger.info(f"All summaries saved to {output_dir}/")
 
 if __name__ == "__main__":
-    import os
     main()

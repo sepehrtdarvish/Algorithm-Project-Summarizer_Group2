@@ -1,0 +1,1 @@
+Scaling a monolith can be inefficient because the entire application must be scaled, even if only one specific feature requires more resources. In contrast to the monolithic approach, microservices architecture structures an application as a collection of loosely coupled services. One of the primary advantages of microservices is resilience.

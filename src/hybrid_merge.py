@@ -20,33 +20,23 @@ class HybridMerger:
                      original_sentences: List[str], 
                      textrank_scores: np.ndarray, 
                      llm_summary: str) -> List[Dict]:
-        """
-        Implements the Hybrid Merge Algorithm defined in Phase 1, Pg 9.
-        Formula: Final = (Alpha * TextRank) + (Beta * Semantic)
-        """
+        
         N = len(original_sentences)
-        
-        # 1. Generate Embeddings for Original Sentences
         original_embeddings = self.model.encode(original_sentences, convert_to_tensor=True)
-        
-        # 2. Generate Embedding for LLM Summary (treated as one block or split)
-        # The logic in Phase 1 implies comparing original sentences to the LLM concepts.
         llm_embedding = self.model.encode(llm_summary, convert_to_tensor=True)
         
-        # 3. Calculate Semantic Similarity
-        # We calculate cosine similarity between each original sentence and the full LLM summary
         semantic_scores = util.cos_sim(original_embeddings, llm_embedding).cpu().numpy().flatten()
         
-        # 4. Normalize TextRank scores to 0-1 range to match Cosine Similarity scale
-        if np.max(textrank_scores) > 0:
-            norm_textrank = textrank_scores / np.max(textrank_scores)
+        # مشکل اصلی اینجا بود: تبدیل به بازه دقیق 0 تا 1
+        t_min, t_max = np.min(textrank_scores), np.max(textrank_scores)
+        if t_max > t_min:
+            norm_textrank = (textrank_scores - t_min) / (t_max - t_min)
         else:
-            norm_textrank = textrank_scores
+            norm_textrank = np.zeros_like(textrank_scores)
 
         merged_results = []
-        
         for i in range(N):
-            # Phase 1, Pg 9, Line 145: Final Formula
+            # حالا هر دو عدد در بازه 0-1 هستند و alpha/beta درست عمل می‌کنند
             final_score = (self.alpha * norm_textrank[i]) + (self.beta * semantic_scores[i])
             
             merged_results.append({

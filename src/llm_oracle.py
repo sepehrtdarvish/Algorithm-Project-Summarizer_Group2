@@ -47,6 +47,7 @@ class LLMOracle:
         if self.model is None:
             raise ValueError("Gemini Model is not initialized. Check your API Key.")
 
+
         try:
             # ارسال پرامپت برای خلاصه سازی
             prompt = f"Please provide a concise abstractive summary of the following text:\n\n{full_text}"
@@ -58,3 +59,5 @@ class LLMOracle:
         except Exception as e:
             print(f"Error calling Metis API: {e}")
             return ""
+            
+        #return "Taking care of houseplants is a rewarding hobby that requires patience and attention to detail. Using a high-quality potting mix is essential because regular garden soil is often too heavy for indoor use. Taking care of living things brings a sense of peace and improves the air quality in your living space."
