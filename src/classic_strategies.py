@@ -69,58 +69,7 @@ class FrequencyStrategy(SummarizationStrategy):
             scores.append(sent_score)
             
         return np.array(scores)
-
-class SentenceRankingStrategy(SummarizationStrategy):
-    """
-    پیاده سازی روش Sentence Ranking (Heuristic).
-    ترکیبی از: موقعیت جمله (اول متن مهم‌تر است) + طول جمله.
-    """
-    def calculate_scores(self, sentences: List[str], config: dict) -> np.ndarray:
-        n = len(sentences)
-        scores = np.zeros(n)
         
-        for i, sent in enumerate(sentences):
-            # 1. Position Score: جملات اول امتیاز ۱ می‌گیرند و به تدریج کم می‌شود
-            pos_score = 1.0 / (i + 1)
-            
-            # 2. Length Score: جملات خیلی کوتاه جریمه می‌شوند (نرمال شده)
-            # فرض ساده: طول بیشتر (تا حدی) بهتر است
-            len_score = min(len(sent.split()), 20) / 20.0
-            
-            # ترکیب وزن‌دار (قابل تنظیم)
-            scores[i] = (0.7 * pos_score) + (0.3 * len_score)
-            
-        return scores
-
-class GreedyStrategy(SummarizationStrategy):
-    """
-    پیاده سازی نسخه امتیازی Greedy (Centroid-based).
-    جملاتی که بیشترین شباهت را به 'بردار میانگین کل متن' دارند، امتیاز بالاتر می‌گیرند.
-    این استراتژی معادل انتخاب جملاتی است که نماینده کل متن هستند.
-    """
-    def calculate_scores(self, sentences: List[str], config: dict) -> np.ndarray:
-        vectorizer = ManualTFIDF()
-        tfidf_matrix = vectorizer.fit_transform(sentences)
-        
-        # محاسبه بردار میانگین (Centroid) کل متن
-        doc_centroid = np.mean(tfidf_matrix, axis=0)
-        
-        # محاسبه شباهت کسینوسی هر جمله با Centroid
-        scores = []
-        norm_centroid = np.linalg.norm(doc_centroid)
-        if norm_centroid == 0:
-            return np.zeros(len(sentences))
-            
-        for vec in tfidf_matrix:
-            norm_vec = np.linalg.norm(vec)
-            if norm_vec == 0:
-                scores.append(0.0)
-            else:
-                sim = np.dot(vec, doc_centroid) / (norm_vec * norm_centroid)
-                scores.append(sim)
-                
-        return np.array(scores)
-
 # Factory برای ساخت راحت کلاس‌ها
 def get_strategy(method_name: str) -> SummarizationStrategy:
     strategies = {
