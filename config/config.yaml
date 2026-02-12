@@ -2,7 +2,7 @@
 
 project:
   name: "Algorithmic Summarization Engine"
-  version: "2.0"
+  version: "2.1"
 
 io:
   input_dir: "data/raw"
@@ -10,28 +10,25 @@ io:
   default_input_file: "input.txt"
 
 preprocessing:
-  min_sentence_length: 10  # Filter out very short sentences (e.g., titles)
+  min_sentence_length: 10
+
+# --- [NEW] Classic Algorithm Selection ---
+classic:
+  # انتخاب روش: textrank, frequency, ranking, greedy
+  method: "frequency" 
 
 textrank:
-  # Similarity threshold to create an edge in the graph (Phase 1, Pg 7)
   similarity_threshold: 0.1
-  # PageRank damping factor (d)
   damping_factor: 0.85
-  # Convergence criteria for PageRank
-  convergence_threshold: 0.0001
   max_iterations: 50
-
-# ... سایر تنظیمات دست نخورده ...
+  convergence_threshold: 0.0001
 
 llm:
   mode: "api" 
   model_name: "gemini-2.0-flash"
   api_key_env_var: "METIS_API_KEY"
 
-# ... سایر تنظیمات دست نخورده ...
-
 hybrid:
-  # The core weights for the merge algorithm (Phase 1, Pg 8)
-  alpha: 0.6  # Weight for Statistical Score (TextRank)
-  beta: 0.4   # Weight for Semantic Similarity (LLM)
-  final_summary_count: 3 # Number of sentences in the final output
+  alpha: 0.6
+  beta: 0.4
+  final_summary_count: 3

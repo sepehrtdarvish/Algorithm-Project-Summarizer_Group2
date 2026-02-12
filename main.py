@@ -1,18 +1,15 @@
 import sys
 import time
 import os
-import numpy as np  # اضافه شد برای اطمینان
+import numpy as np
 from src.utils import load_config, setup_logger, read_text_file, save_summary
 from src.preprocessing import split_into_sentences, filter_sentences
-from src.vectorization import ManualTFIDF
-from src.graph_utils import calculate_cosine_similarity_matrix, build_graph
-from src.textrank import run_pagerank
 from src.llm_oracle import LLMOracle
 from src.hybrid_merge import HybridMerger
-import warnings  # <--- اضافه شد
-# نادیده گرفتن هشدارهای مربوط به تغییرات آینده پکیج‌ها
-warnings.filterwarnings("ignore", category=FutureWarning) # <--- اضافه شد
-warnings.filterwarnings("ignore", category=UserWarning)
+from src.classic_strategies import get_strategy  # <--- Import جدید
+import warnings
+
+warnings.filterwarnings("ignore")
 
 def main():
     # 1. Setup
@@ -38,87 +35,68 @@ def main():
         logger.warning("Not enough sentences to summarize.")
         return
 
-    # 4. Phase 1: TextRank (Statistical)
+    # 4. Phase 1: Classic Algorithm (Dynamic Selection)
+    method_name = config.get('classic', {}).get('method', 'textrank')
+    logger.info(f"Running Phase 1 with Strategy: {method_name.upper()}...")
+    
     start_time = time.time()
     
-    # Vectorization (TF-IDF)
-    vectorizer = ManualTFIDF()
-    tfidf_matrix = vectorizer.fit_transform(sentences)
-    
-    # Graph Construction
-    sim_matrix = calculate_cosine_similarity_matrix(tfidf_matrix)
-    graph = build_graph(sim_matrix, config['textrank']['similarity_threshold'])
-    
-    # PageRank
-    tr_scores = run_pagerank(
-        graph, 
-        d=config['textrank']['damping_factor'],
-        max_iter=config['textrank']['max_iterations'],
-        tol=config['textrank']['convergence_threshold']
-    )
-    
-    logger.info(f"TextRank completed in {time.time() - start_time:.4f}s")
+    try:
+        # انتخاب و اجرای استراتژی
+        strategy = get_strategy(method_name)
+        classic_scores = strategy.calculate_scores(sentences, config)
+        
+        logger.info(f"Classic algorithm ({method_name}) completed in {time.time() - start_time:.4f}s")
+    except Exception as e:
+        logger.error(f"Error in classic algorithm: {e}")
+        return
 
-    # --- [NEW] Generate Classic Summary (TextRank Only) ---
-    logger.info("Generating Classical TextRank Summary...")
+    # Generate Classic Summary Text (Top N based on classic scores)
     top_n = config['hybrid']['final_summary_count']
-    
-    # FIX: استفاده مستقیم از ایندکس برای NumPy Array
-    # جملات را بر اساس امتیاز مرتب می‌کنیم و N تای اول را برمی‌داریم
-    ranked_indices = sorted(
-        range(len(sentences)), 
-        key=lambda i: tr_scores[i],  # این خط برای هم لیست و هم آرایه نامپای کار می‌کند
-        reverse=True
-    )[:top_n]
-    
-    # جملات انتخاب شده را دوباره بر اساس ترتیب متن اصلی مرتب می‌کنیم
-    ranked_indices.sort()
-    
-    classic_summary = " ".join([sentences[i] for i in ranked_indices])
-    # ------------------------------------------------------
+    ranked_indices = np.argsort(classic_scores)[::-1][:top_n]
+    ranked_indices = sorted(ranked_indices) # مرتب سازی دوباره بر اساس ترتیب متن
+    classic_summary_text = " ".join([sentences[i] for i in ranked_indices])
 
     # 5. Phase 2: LLM Oracle (Semantic)
     logger.info("Querying LLM Oracle...")
     oracle = LLMOracle(config['llm'])
-    llm_summary = oracle.get_abstractive_summary(text)
+    llm_summary_text = oracle.get_abstractive_summary(text)
     
     # 6. Hybrid Merge
-    logger.info("Merging Statistical and Semantic Scores...")
+    logger.info("Merging Scores...")
     merger = HybridMerger(
         alpha=config['hybrid']['alpha'],
         beta=config['hybrid']['beta']
     )
     
-    results = merger.merge_scores(sentences, tr_scores, llm_summary)
+    # تابع merge_scores حالا با هر نوع امتیازی (TextRank، Frequency و ...) کار می‌کند
+    results = merger.merge_scores(sentences, classic_scores, llm_summary_text)
     final_hybrid_summary = merger.get_top_n(results, n=config['hybrid']['final_summary_count'])
 
-    # 7. Output (Updated to show all 3)
-    logger.info("Summaries Generated.")
+    # 7. Output
+    print("\n" + "="*50)
+    print(f" 1. CLASSICAL SUMMARY ({method_name.upper()})")
+    print("="*50)
+    print(classic_summary_text)
     
-    print("\n" + "="*40)
-    print(" 1. CLASSICAL SUMMARY (TextRank)")
-    print("="*40)
-    print(classic_summary)
-    
-    print("\n" + "="*40)
+    print("\n" + "="*50)
     print(" 2. SEMANTIC SUMMARY (LLM Oracle)")
-    print("="*40)
-    print(llm_summary)
+    print("="*50)
+    print(llm_summary_text)
     
-    print("\n" + "="*40)
+    print("\n" + "="*50)
     print(" 3. HYBRID SUMMARY (Merged)")
-    print("="*40)
+    print("="*50)
     print(final_hybrid_summary)
-    print("\n" + "="*40 + "\n")
+    print("\n" + "="*50 + "\n")
     
-    # Save to separate files
+    # Save files
     output_dir = config['io']['output_dir']
-    
-    save_summary(output_dir, "summary_classic.txt", classic_summary)
-    save_summary(output_dir, "summary_llm.txt", llm_summary)
+    save_summary(output_dir, f"summary_classic_{method_name}.txt", classic_summary_text)
+    save_summary(output_dir, "summary_llm.txt", llm_summary_text)
     save_summary(output_dir, "summary_hybrid.txt", final_hybrid_summary)
     
-    logger.info(f"All summaries saved to {output_dir}/")
+    logger.info(f"Summaries saved to {output_dir}/")
 
 if __name__ == "__main__":
     main()

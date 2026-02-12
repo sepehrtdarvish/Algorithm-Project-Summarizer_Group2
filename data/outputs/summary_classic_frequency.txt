@@ -1,0 +1,1 @@
+One of the primary advantages of microservices is resilience. In a monolithic architecture, a bug in one component can potentially bring down the entire system. Therefore, the choice between a monolithic and microservices architecture depends on the specific needs of the organization, the size of the application, and the team's operational maturity.
