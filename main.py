@@ -9,6 +9,10 @@ from src.graph_utils import calculate_cosine_similarity_matrix, build_graph
 from src.textrank import run_pagerank
 from src.llm_oracle import LLMOracle
 from src.hybrid_merge import HybridMerger
+import warnings  # <--- اضافه شد
+# نادیده گرفتن هشدارهای مربوط به تغییرات آینده پکیج‌ها
+warnings.filterwarnings("ignore", category=FutureWarning) # <--- اضافه شد
+warnings.filterwarnings("ignore", category=UserWarning)
 
 def main():
     # 1. Setup
