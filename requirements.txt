@@ -8,3 +8,4 @@ tqdm
 huggingface_hub
 google-generativeai
 matplotlib
+pandas

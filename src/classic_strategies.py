@@ -69,14 +69,12 @@ class FrequencyStrategy(SummarizationStrategy):
             scores.append(sent_score)
             
         return np.array(scores)
-        
+
 # Factory برای ساخت راحت کلاس‌ها
 def get_strategy(method_name: str) -> SummarizationStrategy:
     strategies = {
         'textrank': TextRankStrategy(),
         'frequency': FrequencyStrategy(),
-        'ranking': SentenceRankingStrategy(),
-        'greedy': GreedyStrategy()
     }
     if method_name not in strategies:
         raise ValueError(f"Unknown classic method: {method_name}. Available: {list(strategies.keys())}")
