@@ -20,7 +20,6 @@ class LLMOracle:
         if self.mode == 'mock':
             return
 
-        # بررسی پیش‌نیازها
         if genai is None:
             raise ImportError("Please install `google-generativeai` package.")
 
@@ -29,7 +28,6 @@ class LLMOracle:
             print(">> [Warning] API Key not found. LLM Oracle might fail.")
             return
 
-        # کانفیگ و ساخت مدل
         genai.configure(
             api_key=api_key,
             transport='rest',

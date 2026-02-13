@@ -1,4 +1,3 @@
-# src/utils.py
 import yaml
 import os
 import logging
@@ -9,15 +8,12 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     Loads the YAML configuration file.
     Uses absolute path relative to the project root to avoid FileNotFoundError.
     """
-    # اگر مسیری داده نشد، مسیر پیش‌فرض را به صورت هوشمند بساز
     if config_path is None:
-        # این فایل در src/utils.py است. دو مرحله عقب می‌رویم تا به ریشه پروژه برسیم
-        current_dir = os.path.dirname(os.path.abspath(__file__)) # .../src
-        project_root = os.path.dirname(current_dir)              # .../algorithm
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
         config_path = os.path.join(project_root, "config", "config.yaml")
 
     if not os.path.exists(config_path):
-        # چاپ مسیر کامل برای دیباگ راحت‌تر
         raise FileNotFoundError(f"Config file not found at: {os.path.abspath(config_path)}")
     
     with open(config_path, 'r', encoding='utf-8') as file:

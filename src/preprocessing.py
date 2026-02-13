@@ -1,20 +1,14 @@
-# src/preprocessing.py
 import nltk
 from typing import List
 
-# --- بخش اصلاح شده برای دانلود خودکار ---
-# چک کردن و دانلود پکیج‌های ضروری NLTK
 required_resources = ['punkt', 'punkt_tab']
 
 for resource in required_resources:
     try:
-        # سعی کن پیداش کنی
         nltk.data.find(f'tokenizers/{resource}')
     except LookupError:
-        # اگر نبود دانلودش کن
         print(f">> Downloading missing NLTK resource: {resource}...")
         nltk.download(resource)
-# ----------------------------------------
 
 def split_into_sentences(text: str) -> List[str]:
     """

@@ -12,9 +12,6 @@ from src.classic_strategies import get_strategy
 # 1. Helper Function to Generate Synthetic Data
 # ---------------------------------------------------------
 def generate_synthetic_sentences(num_sentences: int) -> List[str]:
-    """
-    تولید جملات مصنوعی برای تست استرس الگوریتم.
-    """
     base_sentences = [
         "Software architecture has evolved significantly over the past few decades.",
         "Microservices offer advantages like resilience and independent deployment.",
@@ -34,9 +31,7 @@ def generate_synthetic_sentences(num_sentences: int) -> List[str]:
 # 2. Benchmarking Function (Updated for Comparison)
 # ---------------------------------------------------------
 def run_comparative_benchmark(config, sizes: List[int], strategies: List[str]) -> Dict[str, List[float]]:
-    """
-    اجرای بنچمارک روی لیست استراتژی‌ها برای مقایسه عملکرد.
-    """
+
     results = {name: [] for name in strategies}
     logger = setup_logger("Benchmark")
     
@@ -72,13 +67,8 @@ def run_comparative_benchmark(config, sizes: List[int], strategies: List[str]) -
 
     return results
 
-# ---------------------------------------------------------
-# 3. Plotting and Saving Results (Comparative)
-# ---------------------------------------------------------
+
 def save_comparative_plot(sizes, results, output_dir):
-    """
-    رسم نمودار مقایسه‌ای استراتژی‌ها و منحنی‌های تئوری.
-    """
     plt.figure(figsize=(12, 7))
     
     colors = {'textrank': 'blue', 'frequency': 'green', 'greedy': 'orange'}
@@ -130,9 +120,7 @@ def save_comparative_plot(sizes, results, output_dir):
     print(f"\n[Success] Comparative plot saved to: {output_path}")
     plt.close()
 
-# ---------------------------------------------------------
-# 4. Main Execution
-# ---------------------------------------------------------
+
 if __name__ == "__main__":
     # Load Config
     try:
@@ -146,7 +134,6 @@ if __name__ == "__main__":
         }
 
     # Define Test Cases (Input Sizes)
-    # تا 500 جمله برای دیدن تفاوت خطی و مربعی کافی است
     input_sizes = [10, 50, 100, 200, 300, 500, 800] 
     
     # Define Strategies to Compare

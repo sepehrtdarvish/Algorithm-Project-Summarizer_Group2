@@ -1,4 +1,3 @@
-# src/classic_strategies.py
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import List
@@ -45,15 +44,11 @@ class FrequencyStrategy(SummarizationStrategy):
     """
     def calculate_scores(self, sentences: List[str], config: dict) -> np.ndarray:
         vectorizer = ManualTFIDF()
-        # استفاده از متد fit_transform برای محاسبه TF و واژگان
         _ = vectorizer.fit_transform(sentences)
         
-        # محاسبه فراوانی کلی هر کلمه در کل داکیومنت (از روی vocab و شمارش ساده)
-        # برای سادگی از tf_matrix داخلی vectorizer استفاده نمی‌کنیم و مستقیم می‌شماریم
         word_freq = {}
         tokenized_sentences = [vectorizer._tokenize(s) for s in sentences]
         
-        # ساخت جدول فراوانی
         all_tokens = [w for s in tokenized_sentences for w in s]
         total_tokens = len(all_tokens)
         for w in all_tokens:
@@ -64,13 +59,11 @@ class FrequencyStrategy(SummarizationStrategy):
             if not tokens:
                 scores.append(0.0)
                 continue
-            # امتیاز = مجموع احتمال وقوع کلمات / طول جمله
             sent_score = sum(word_freq.get(w, 0) for w in tokens) / len(tokens)
             scores.append(sent_score)
             
         return np.array(scores)
 
-# Factory برای ساخت راحت کلاس‌ها
 def get_strategy(method_name: str) -> SummarizationStrategy:
     strategies = {
         'textrank': TextRankStrategy(),

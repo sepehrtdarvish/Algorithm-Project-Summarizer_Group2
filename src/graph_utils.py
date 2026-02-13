@@ -1,4 +1,3 @@
-# src/graph_utils.py
 import numpy as np
 
 def calculate_cosine_similarity_matrix(tfidf_matrix: np.ndarray) -> np.ndarray:

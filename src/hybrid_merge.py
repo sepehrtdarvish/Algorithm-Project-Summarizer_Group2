@@ -1,4 +1,3 @@
-# src/hybrid_merge.py
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from typing import List, Dict

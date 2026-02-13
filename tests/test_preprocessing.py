@@ -21,12 +21,12 @@ class TestPreprocessing(unittest.TestCase):
         """(Hard Input) تشخیص مخفف‌ها مثل Mr. نباید جمله را بشکند"""
         text = "Mr. Smith went to Washington."
         result = split_into_sentences(text)
-        self.assertEqual(len(result), 1)  # نباید بعد از Mr. بشکند
+        self.assertEqual(len(result), 1)
 
     def test_filter_short_sentences(self):
         """حذف جملات خیلی کوتاه"""
         sentences = ["Hi", "This is a valid sentence.", "No"]
-        # فرض کنیم مینیمم طول ۱۰ است
+        
         result = filter_sentences(sentences, min_length=10)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], "This is a valid sentence.")

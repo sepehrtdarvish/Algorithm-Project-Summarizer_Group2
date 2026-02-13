@@ -8,14 +8,11 @@ from src.textrank import run_pagerank
 class TestPhase2Scenarios(unittest.TestCase):
 
     def run_pipeline(self, text):
-        """
-        اجرای پایپ‌لاین با اصلاح مهم: حذف قطر اصلی ماتریس (Self-Loops)
-        """
         # 1. Preprocessing
         # پاکسازی فضاهای اضافی متن ورودی
         clean_text = text.strip()
         sentences = split_into_sentences(clean_text)
-        filtered = filter_sentences(sentences, min_length=10)  # کمی سخت‌گیرانه‌تر
+        filtered = filter_sentences(sentences, min_length=10)
 
         if len(filtered) < 2:
             return filtered, None
@@ -27,17 +24,12 @@ class TestPhase2Scenarios(unittest.TestCase):
         # 3. Graph Building
         sim_matrix = np.dot(matrix, matrix.T)
 
-        # --- اصلاح حیاتی: حذف ارتباط جمله با خودش ---
-        # اگر این کار را نکنیم، الگوریتم PageRank درست همگرا نمی‌شود
         np.fill_diagonal(sim_matrix, 0)
 
         # 4. PageRank
         scores = run_pagerank(sim_matrix, d=0.85)
         return filtered, scores
 
-    # ==========================================
-    # 1. تست‌های ورودی ساده
-    # ==========================================
     def test_01_simple_topic_dominance(self):
         """سناریو ۱: جملات مرتبط باید امتیاز متفاوت بگیرند."""
         text = """
@@ -47,8 +39,6 @@ class TestPhase2Scenarios(unittest.TestCase):
         """
         sentences, scores = self.run_pipeline(text)
 
-        # چون جمله موز کاملاً بی ربط است، باید امتیازش با بقیه فرق داشته باشد
-        # یا واریانس امتیازها نباید صفر باشد (یعنی همه 1.0 نباشند)
         variance = np.var(scores)
         self.assertGreater(variance, 0.0, "Scores should not be identical (all 1.0).")
 
@@ -71,9 +61,7 @@ class TestPhase2Scenarios(unittest.TestCase):
         """
         sentences, scores = self.run_pipeline(text)
 
-        # تحلیل: مطمئن می‌شویم که امتیازها محاسبه شده‌اند
         self.assertEqual(len(scores), 4)
-        # مطمئن می‌شویم امتیازها "تخت" نیستند (یعنی رتبه‌بندی اتفاق افتاده)
         self.assertGreater(np.std(scores), 0)
 
     def test_04_hard_technical_terms(self):
@@ -86,11 +74,8 @@ class TestPhase2Scenarios(unittest.TestCase):
         """
         sentences, scores = self.run_pipeline(text)
 
-        # چک پایداری: امتیازها نباید NaN باشند
         self.assertFalse(np.any(np.isnan(scores)))
 
-        # تحلیل: جمله اول یا دوم (که کلمه NLP/Processing دارند) معمولاً باید امتیاز خوبی بگیرند.
-        # اینجا فقط چک می‌کنیم که سیستم کار کرده و خروجی داده.
         self.assertIsNotNone(scores)
 
     # ==========================================
@@ -121,14 +106,11 @@ class TestPhase2Scenarios(unittest.TestCase):
         """
         sentences, scores = self.run_pipeline(text)
 
-        # تحلیل تئوری: وقتی همه جملات کپی هستند، امتیازها باید برابر باشند.
-        # واریانس باید بسیار نزدیک به صفر باشد.
         variance = np.var(scores)
         self.assertAlmostEqual(variance, 0.0, places=5)
 
     def test_10_stability_check(self):
         """سناریو ۱۰: پایداری الگوریتم (اجرای روی متن واقعی)."""
-        # متن واقعی استفاده می‌کنیم تا فیلتر نشود
         text = """
         Stability testing verifies that the system works consistently.
         Running the algorithm twice should yield the same results.
@@ -137,27 +119,21 @@ class TestPhase2Scenarios(unittest.TestCase):
         _, scores1 = self.run_pipeline(text)
         _, scores2 = self.run_pipeline(text)
 
-        # انتظار: دو بار اجرا روی یک متن باید دقیقاً یک خروجی بدهد
         np.testing.assert_array_almost_equal(scores1, scores2)
 
     def test_07_edge_single_sentence(self):
         """سناریو ۷: متن فقط شامل یک جمله است (گراف تشکیل نمی‌شود)."""
         text = "Only one sentence exists in this entire text."
-        # وقتی فقط یک جمله داریم، تابع باید تشخیص دهد که گراف قابل ساخت نیست
         sentences, scores = self.run_pipeline(text)
 
-        # انتظار: خروجی اسکور باید None باشد (طبق لاجیک کد ما)
         self.assertIsNone(scores)
 
     def test_09_worst_no_punctuation(self):
         """سناریو ۹: متن طولانی بدون نقطه (چالش Tokenizer)."""
-        # این متن هیچ نقطه‌ای ندارد، پس باید به عنوان ۱ جمله تشخیص داده شود
         text = "This is a very long text without any dots so it should be treated as one single sentence by the splitter even if it is long"
         sentences, scores = self.run_pipeline(text)
 
-        # انتظار: اسپلیتر باید کل این را ۱ جمله ببیند
         self.assertEqual(len(sentences), 1)
-        # چون ۱ جمله است، گراف تشکیل نمی‌شود و اسکور نداریم
         self.assertIsNone(scores)
 
 

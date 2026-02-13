@@ -9,9 +9,7 @@ from src.classic_strategies import get_strategy
 from src.llm_oracle import LLMOracle
 from src.hybrid_merge import HybridMerger
 
-# ---------------------------------------------------------
-# 1. Hardcoded Test Cases (Simple to Hard)
-# ---------------------------------------------------------
+
 TEST_CASES = [
     # --- LEVEL 1-3: SIMPLE ---
     {
@@ -94,7 +92,6 @@ class SummarizationBenchmark:
         summary_count = min(len(sentences), self.config['hybrid']['final_summary_count'])
 
         # --- A. Pure LLM ---
-        # Cache LLM summary because we need it for Hybrid too
         llm_summary_text = self.oracle.get_abstractive_summary(text)
         candidates['Pure LLM'] = llm_summary_text
 

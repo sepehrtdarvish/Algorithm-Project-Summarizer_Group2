@@ -1,4 +1,3 @@
-# config/config.yaml
 
 project:
   name: "Algorithmic Summarization Engine"
@@ -12,10 +11,9 @@ io:
 preprocessing:
   min_sentence_length: 10
 
-# --- [NEW] Classic Algorithm Selection ---
 classic:
-  # انتخاب روش: textrank, frequency
-  method: "frequency" 
+  #textrank, frequency
+  method: "textrank" 
 
 textrank:
   similarity_threshold: 0.1
