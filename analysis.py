@@ -2,14 +2,11 @@ import time
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Tuple
+from typing import List, Dict
 
 # Import project modules
-# فرض بر این است که این فایل در کنار main.py قرار دارد
-from src.vectorization import ManualTFIDF
-from src.graph_utils import calculate_cosine_similarity_matrix, build_graph
-from src.textrank import run_pagerank
 from src.utils import load_config, setup_logger
+from src.classic_strategies import get_strategy
 
 # ---------------------------------------------------------
 # 1. Helper Function to Generate Synthetic Data
@@ -17,7 +14,6 @@ from src.utils import load_config, setup_logger
 def generate_synthetic_sentences(num_sentences: int) -> List[str]:
     """
     تولید جملات مصنوعی برای تست استرس الگوریتم.
-    این تابع تضمین می‌کند که کد بدون نیاز به فایل‌های متنی واقعی اجرا شود.
     """
     base_sentences = [
         "Software architecture has evolved significantly over the past few decades.",
@@ -29,97 +25,109 @@ def generate_synthetic_sentences(num_sentences: int) -> List[str]:
     
     generated = []
     for i in range(num_sentences):
-        # تکرار چرخشی جملات پایه برای ساخت حجم دلخواه
         base = base_sentences[i % len(base_sentences)]
-        # اضافه کردن اندیس برای متفاوت شدن متن‌ها (جلوگیری از شباهت ۱۰۰ درصدی همه)
         generated.append(f"{base} (sentence id {i})")
     
     return generated
 
 # ---------------------------------------------------------
-# 2. Benchmarking Function
+# 2. Benchmarking Function (Updated for Comparison)
 # ---------------------------------------------------------
-def run_benchmark(config, sizes: List[int]) -> Tuple[List[int], List[float]]:
+def run_comparative_benchmark(config, sizes: List[int], strategies: List[str]) -> Dict[str, List[float]]:
     """
-    الگوریتم TextRank را روی تعداد جملات مختلف اجرا کرده و زمان را اندازه می‌گیرد.
+    اجرای بنچمارک روی لیست استراتژی‌ها برای مقایسه عملکرد.
     """
-    times = []
+    results = {name: [] for name in strategies}
     logger = setup_logger("Benchmark")
     
-    logger.info("Starting Performance Analysis...")
-    logger.info(f"Testing input sizes (sentences): {sizes}")
+    logger.info("Starting Comparative Performance Analysis...")
+    logger.info(f"Strategies to test: {strategies}")
+    logger.info(f"Input sizes (sentences): {sizes}")
 
     for n in sizes:
         # 1. Generate Data
         sentences = generate_synthetic_sentences(n)
+        logger.info(f"--- Benchmarking N={n} ---")
         
-        # 2. Start Timer
-        start_time = time.time()
-        
-        try:
-            # --- Core Algorithm (Phase 1 Logic) ---
-            # A. Vectorization
-            vectorizer = ManualTFIDF()
-            tfidf_matrix = vectorizer.fit_transform(sentences)
-            
-            # B. Graph Construction
-            sim_matrix = calculate_cosine_similarity_matrix(tfidf_matrix)
-            graph = build_graph(sim_matrix, config['textrank']['similarity_threshold'])
-            
-            # C. PageRank
-            _ = run_pagerank(
-                graph, 
-                d=config['textrank']['damping_factor'],
-                max_iter=config['textrank']['max_iterations'],
-                tol=config['textrank']['convergence_threshold']
-            )
-            # --------------------------------------
-            
-        except Exception as e:
-            logger.error(f"Error at size {n}: {e}")
-            times.append(0)
-            continue
+        for strategy_name in strategies:
+            try:
+                # Get Strategy Instance
+                strategy = get_strategy(strategy_name)
+                
+                # Start Timer
+                start_time = time.time()
+                
+                # Execution
+                _ = strategy.calculate_scores(sentences, config)
+                
+                # Stop Timer
+                duration = time.time() - start_time
+                results[strategy_name].append(duration)
+                
+                # logger.info(f"   -> {strategy_name}: {duration:.4f}s")
+                
+            except Exception as e:
+                logger.error(f"Error in {strategy_name} at size {n}: {e}")
+                results[strategy_name].append(0)
 
-        # 3. Stop Timer
-        end_time = time.time()
-        duration = end_time - start_time
-        times.append(duration)
-        
-        logger.info(f"Size: {n} sentences | Time: {duration:.4f}s")
-
-    return sizes, times
+    return results
 
 # ---------------------------------------------------------
-# 3. Plotting and Saving Results
+# 3. Plotting and Saving Results (Comparative)
 # ---------------------------------------------------------
-def save_performance_plot(sizes, times, output_dir):
+def save_comparative_plot(sizes, results, output_dir):
     """
-    رسم نمودار رشد زمانی و ذخیره آن.
+    رسم نمودار مقایسه‌ای استراتژی‌ها و منحنی‌های تئوری.
     """
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 7))
     
-    # Plot Actual Data
-    plt.plot(sizes, times, marker='o', linestyle='-', color='b', label='Actual Runtime')
+    colors = {'textrank': 'blue', 'frequency': 'green', 'greedy': 'orange'}
+    markers = {'textrank': 'o', 'frequency': 's', 'greedy': '^'}
     
-    # Optional: Plot O(N^2) Theoretical Curve for comparison
-    # نرمال‌سازی برای هم‌مقیاس شدن با زمان واقعی
-    if len(sizes) > 0 and len(times) > 0:
-        theoretical = [n**2 for n in sizes]
-        scale_factor = times[-1] / theoretical[-1] if theoretical[-1] != 0 else 1
-        theoretical_scaled = [t * scale_factor for t in theoretical]
-        plt.plot(sizes, theoretical_scaled, linestyle='--', color='r', alpha=0.5, label='Theoretical O(N^2)')
+    # Plot Actual Data for each strategy
+    for name, times in results.items():
+        if not times: continue
+        plt.plot(sizes, times, 
+                 marker=markers.get(name, 'x'), 
+                 linestyle='-', 
+                 color=colors.get(name, 'black'), 
+                 label=f'{name.capitalize()} (Actual)',
+                 linewidth=2)
 
-    plt.title('Algorithm Performance Analysis (TextRank)')
+    # --- Plot Theoretical Curves (Comparison with Big-O) ---
+    # TextRank is usually O(N^2) due to similarity matrix
+    if 'textrank' in results and len(sizes) > 0:
+        tr_times = results['textrank']
+        if tr_times[-1] > 0:
+            theoretical_n2 = [n**2 for n in sizes]
+            # Normalize to match the last point of actual data
+            scale_n2 = tr_times[-1] / theoretical_n2[-1]
+            plt.plot(sizes, [t * scale_n2 for t in theoretical_n2], 
+                     linestyle='--', color='blue', alpha=0.4, 
+                     label='Theoretical O(N^2)')
+
+    # Frequency is usually O(N) (Linear scan)
+    if 'frequency' in results and len(sizes) > 0:
+        fr_times = results['frequency']
+        if fr_times[-1] > 0:
+            theoretical_n = [n for n in sizes]
+            # Normalize
+            scale_n = fr_times[-1] / theoretical_n[-1]
+            plt.plot(sizes, [t * scale_n for t in theoretical_n], 
+                     linestyle='--', color='green', alpha=0.4, 
+                     label='Theoretical O(N)')
+
+    plt.title('Algorithm Performance Comparison: TextRank vs Frequency')
     plt.xlabel('Number of Sentences (N)')
     plt.ylabel('Execution Time (Seconds)')
-    plt.grid(True)
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
     plt.legend()
     
     # Save
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "performance_analysis.png")
+    output_path = os.path.join(output_dir, "comparative_performance.png")
     plt.savefig(output_path)
-    print(f"\n[Success] Plot saved to: {output_path}")
+    print(f"\n[Success] Comparative plot saved to: {output_path}")
     plt.close()
 
 # ---------------------------------------------------------
@@ -130,24 +138,22 @@ if __name__ == "__main__":
     try:
         config = load_config()
     except Exception as e:
-        # Fallback config if file missing (to prevent crash)
         print(f"Warning: Could not load config ({e}). Using defaults.")
+        # Minimal config mock
         config = {
-            'textrank': {
-                'similarity_threshold': 0.1,
-                'damping_factor': 0.85,
-                'max_iterations': 50,
-                'convergence_threshold': 0.0001
-            },
+            'textrank': {'similarity_threshold': 0.1, 'damping_factor': 0.85, 'max_iterations': 50, 'convergence_threshold': 0.0001},
             'io': {'output_dir': 'data/outputs'}
         }
 
     # Define Test Cases (Input Sizes)
-    # تست با تعداد جملات کم تا زیاد برای نشان دادن رشد نمایی
-    input_sizes = [10, 50, 100, 200, 300, 500] 
+    # تا 500 جمله برای دیدن تفاوت خطی و مربعی کافی است
+    input_sizes = [10, 50, 100, 200, 300, 500, 800] 
+    
+    # Define Strategies to Compare
+    strategies_to_test = ['textrank', 'frequency']
     
     # Run Benchmark
-    sizes, times = run_benchmark(config, input_sizes)
+    results = run_comparative_benchmark(config, input_sizes, strategies_to_test)
     
     # Save Results
-    save_performance_plot(sizes, times, config['io']['output_dir'])
+    save_comparative_plot(input_sizes, results, config['io']['output_dir'])

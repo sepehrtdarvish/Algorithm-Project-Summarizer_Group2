@@ -20,10 +20,8 @@ def split_into_sentences(text: str) -> List[str]:
     """
     Splits the raw text into a list of sentences using NLTK.
     """
-    # استفاده از sent_tokenize که حالا پکیج‌های لازم را دارد
     sentences = nltk.sent_tokenize(text)
     
-    # Basic cleanup: remove newlines inside sentences
     cleaned_sentences = [s.strip().replace('\n', ' ') for s in sentences]
     return cleaned_sentences
 

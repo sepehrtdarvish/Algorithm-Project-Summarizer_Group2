@@ -6,7 +6,7 @@ from src.utils import load_config, setup_logger, read_text_file, save_summary
 from src.preprocessing import split_into_sentences, filter_sentences
 from src.llm_oracle import LLMOracle
 from src.hybrid_merge import HybridMerger
-from src.classic_strategies import get_strategy  # <--- Import جدید
+from src.classic_strategies import get_strategy 
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -42,7 +42,6 @@ def main():
     start_time = time.time()
     
     try:
-        # انتخاب و اجرای استراتژی
         strategy = get_strategy(method_name)
         classic_scores = strategy.calculate_scores(sentences, config)
         
@@ -54,7 +53,7 @@ def main():
     # Generate Classic Summary Text (Top N based on classic scores)
     top_n = config['hybrid']['final_summary_count']
     ranked_indices = np.argsort(classic_scores)[::-1][:top_n]
-    ranked_indices = sorted(ranked_indices) # مرتب سازی دوباره بر اساس ترتیب متن
+    ranked_indices = sorted(ranked_indices)
     classic_summary_text = " ".join([sentences[i] for i in ranked_indices])
 
     # 5. Phase 2: LLM Oracle (Semantic)
@@ -69,7 +68,6 @@ def main():
         beta=config['hybrid']['beta']
     )
     
-    # تابع merge_scores حالا با هر نوع امتیازی (TextRank، Frequency و ...) کار می‌کند
     results = merger.merge_scores(sentences, classic_scores, llm_summary_text)
     final_hybrid_summary = merger.get_top_n(results, n=config['hybrid']['final_summary_count'])
 
