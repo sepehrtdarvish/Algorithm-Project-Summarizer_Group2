@@ -14,7 +14,7 @@ preprocessing:
 
 # --- [NEW] Classic Algorithm Selection ---
 classic:
-  # انتخاب روش: textrank, frequency, ranking, greedy
+  # انتخاب روش: textrank, frequency
   method: "frequency" 
 
 textrank:

@@ -12,7 +12,6 @@ class HybridMerger:
         """
         self.alpha = alpha
         self.beta = beta
-        # Load a lightweight SBERT model for embeddings (Phase 1, Pg 9, Line 137)
         print(">> [HybridMerger] Loading Embedding Model...")
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -27,7 +26,6 @@ class HybridMerger:
         
         semantic_scores = util.cos_sim(original_embeddings, llm_embedding).cpu().numpy().flatten()
         
-        # مشکل اصلی اینجا بود: تبدیل به بازه دقیق 0 تا 1
         t_min, t_max = np.min(textrank_scores), np.max(textrank_scores)
         if t_max > t_min:
             norm_textrank = (textrank_scores - t_min) / (t_max - t_min)
@@ -36,7 +34,6 @@ class HybridMerger:
 
         merged_results = []
         for i in range(N):
-            # حالا هر دو عدد در بازه 0-1 هستند و alpha/beta درست عمل می‌کنند
             final_score = (self.alpha * norm_textrank[i]) + (self.beta * semantic_scores[i])
             
             merged_results.append({
